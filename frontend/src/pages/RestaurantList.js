@@ -11,45 +11,24 @@ import {
   TextField,
   InputAdornment,
   Rating,
+  Chip,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import RestaurantIcon from '@mui/icons-material/Restaurant';
-
-// Temporary mock data
-const mockRestaurants = [
-  {
-    id: 1,
-    name: 'The Gourmet Kitchen',
-    image: 'https://source.unsplash.com/random/300x200/?restaurant',
-    rating: 4.5,
-    cuisine: 'Italian',
-    location: 'Downtown',
-  },
-  {
-    id: 2,
-    name: 'Sushi Master',
-    image: 'https://source.unsplash.com/random/300x200/?sushi',
-    rating: 4.8,
-    cuisine: 'Japanese',
-    location: 'Westside',
-  },
-  {
-    id: 3,
-    name: 'Burger Paradise',
-    image: 'https://source.unsplash.com/random/300x200/?burger',
-    rating: 4.2,
-    cuisine: 'American',
-    location: 'Eastside',
-  },
-];
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import restaurantData from '../data/restaurants.json';
 
 function RestaurantList() {
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
-  const filteredRestaurants = mockRestaurants.filter((restaurant) =>
-    restaurant.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredRestaurants = restaurantData.filter((restaurant) =>
+    restaurant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    restaurant.cuisine.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const getCostRating = (rating) => {
+    return '$'.repeat(rating);
+  };
 
   return (
     <Container maxWidth="lg">
@@ -60,7 +39,7 @@ function RestaurantList() {
         <TextField
           fullWidth
           variant="outlined"
-          placeholder="Search restaurants..."
+          placeholder="Search restaurants by name or cuisine..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           sx={{ mb: 4 }}
@@ -81,27 +60,41 @@ function RestaurantList() {
                   display: 'flex',
                   flexDirection: 'column',
                   cursor: 'pointer',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    transition: 'transform 0.2s ease-in-out',
+                  },
                 }}
                 onClick={() => navigate(`/restaurants/${restaurant.id}`)}
               >
                 <CardMedia
                   component="img"
                   height="200"
-                  image={restaurant.image}
+                  image={`https://source.unsplash.com/random/300x200/?${restaurant.cuisine.split(',')[0].toLowerCase()}`}
                   alt={restaurant.name}
                 />
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Typography gutterBottom variant="h5" component="h2">
                     {restaurant.name}
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
                     <Rating value={restaurant.rating} precision={0.5} readOnly />
-                    <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                      ({restaurant.rating})
+                    <Typography variant="body2" color="text.secondary">
+                      ({restaurant.rating}) • {restaurant.num_reviews} reviews
+                    </Typography>
+                    <Chip label={getCostRating(restaurant.cost_rating)} color="primary" size="small" />
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    {restaurant.cuisine}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <LocationOnIcon sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      {restaurant.location.city}, {restaurant.location.state}
                     </Typography>
                   </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    {restaurant.cuisine} • {restaurant.location}
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Bookings Today: {restaurant.bookings_today}
                   </Typography>
                 </CardContent>
               </Card>

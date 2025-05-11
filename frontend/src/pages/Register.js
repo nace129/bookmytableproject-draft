@@ -129,6 +129,7 @@ const Register = () => {
             >
               <MenuItem value="customer">Customer</MenuItem>
               <MenuItem value="restaurant_manager">Restaurant Manager</MenuItem>
+              <MenuItem value="admin">Admin</MenuItem>
             </TextField>
             <Button
               type="submit"

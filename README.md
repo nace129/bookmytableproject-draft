@@ -36,7 +36,6 @@ Web application that allows users to book tables at restaurants seamlessly. This
 - AWS (Amazon Web Services)
   - EC2 for hosting
   - S3 for static content
-  - CloudFront for CDN
 
 ## 📋 Project Documentation
 

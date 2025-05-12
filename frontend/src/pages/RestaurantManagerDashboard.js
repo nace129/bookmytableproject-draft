@@ -25,20 +25,18 @@ import {
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import restaurantsData from '../data/restaurants.json';
 
 export default function RestaurantManagerDashboard() {
   // Restaurant info state
   const [info, setInfo] = useState({
-    name: 'My Restaurant',
-    address: '123 Main St',
-    contact: '555-1234',
-    openingTime: '09:00',
-    closingTime: '22:00',
-    description: 'A cozy place to dine.',
-    tableLayout: [
-      { time: '17:30', maxSeats: 4 },
-      { time: '18:00', maxSeats: 4 },
-    ],
+    name: '',
+    address: '',
+    contact: '',
+    openingTime: '',
+    closingTime: '',
+    description: '',
+    tableLayout: [],
     photos: []
   });
 
@@ -49,6 +47,26 @@ export default function RestaurantManagerDashboard() {
   // UI state
   const [error, setError] = useState('');
   const [openEdit, setOpenEdit] = useState(false);
+
+  useEffect(() => {
+    // Load the first restaurant from JSON as an example
+    if (restaurantsData.length > 0) {
+      const restaurant = restaurantsData[0];
+      const address = restaurant.location
+        ? `${restaurant.location.city}, ${restaurant.location.state}, ${restaurant.location.zip}`
+        : `Near coordinates (${restaurant.coords?.lat.toFixed(2)}, ${restaurant.coords?.lng.toFixed(2)})`;
+      setInfo({
+        name: restaurant.name,
+        address: address,
+        contact: restaurant.contact || 'No contact info',
+        openingTime: '09:00', // Default opening time
+        closingTime: '22:00', // Default closing time
+        description: restaurant.description || 'No description available',
+        tableLayout: restaurant.table_layout || [],
+        photos: []
+      });
+    }
+  }, []);
 
   // Load reservations on date change
   useEffect(() => {

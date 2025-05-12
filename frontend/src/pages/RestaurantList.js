@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -12,6 +12,7 @@ import {
   InputAdornment,
   Rating,
   Chip,
+  Pagination,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -19,12 +20,45 @@ import restaurantData from '../data/restaurants.json';
 
 function RestaurantList() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
   const navigate = useNavigate();
 
-  const filteredRestaurants = restaurantData.filter((restaurant) =>
-    restaurant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    restaurant.cuisine.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Calculate ratings and bookings_today dynamically
+  const processedRestaurants = useMemo(() => {
+    return restaurantData.map((restaurant) => {
+      const totalRating = restaurant.reviews.reduce((sum, review) => sum + review.rating, 0);
+      const averageRating = restaurant.reviews.length > 0 ? totalRating / restaurant.reviews.length : 0;
+      const totalBookings = restaurant.table_layout.reduce((sum, table) => sum + (table.maxSeats - table.available), 0);
+
+      return {
+        ...restaurant,
+        rating: averageRating,
+        num_reviews: restaurant.reviews.length,
+        bookings_today: totalBookings > 0 ? totalBookings : 1, // Ensure bookings_today is not 0
+      };
+    });
+  }, []);
+
+  // Filter restaurants based on search term
+  const filteredRestaurants = useMemo(() => {
+    const lcSearchTerm = searchTerm.toLowerCase();
+    return processedRestaurants.filter(
+      (restaurant) =>
+        restaurant.name.toLowerCase().includes(lcSearchTerm) ||
+        restaurant.cuisine.toLowerCase().includes(lcSearchTerm)
+    );
+  }, [searchTerm, processedRestaurants]);
+
+  // Paginate filtered restaurants
+  const paginatedRestaurants = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredRestaurants.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredRestaurants, currentPage]);
+
+  const handlePageChange = (event, value) => {
+    setCurrentPage(value);
+  };
 
   const getCostRating = (rating) => {
     return '$'.repeat(rating);
@@ -52,7 +86,7 @@ function RestaurantList() {
           }}
         />
         <Grid container spacing={4}>
-          {filteredRestaurants.map((restaurant) => (
+          {paginatedRestaurants.map((restaurant) => (
             <Grid item key={restaurant.id} xs={12} sm={6} md={4}>
               <Card
                 sx={{
@@ -82,7 +116,7 @@ function RestaurantList() {
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
                     <Rating value={restaurant.rating} precision={0.5} readOnly />
                     <Typography variant="body2" color="text.secondary">
-                      ({restaurant.rating}) • {restaurant.num_reviews} reviews
+                      ({restaurant.rating.toFixed(1)}) • {restaurant.num_reviews} reviews
                     </Typography>
                     <Chip label={getCostRating(restaurant.cost_rating)} color="primary" size="small" />
                   </Box>
@@ -103,9 +137,17 @@ function RestaurantList() {
             </Grid>
           ))}
         </Grid>
+        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+          <Pagination
+            count={Math.ceil(filteredRestaurants.length / itemsPerPage)}
+            page={currentPage}
+            onChange={handlePageChange}
+            color="primary"
+          />
+        </Box>
       </Box>
     </Container>
   );
 }
 
-export default RestaurantList; 
+export default RestaurantList;

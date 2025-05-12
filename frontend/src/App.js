@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import { ThemeProvider, CssBaseline, Box } from '@mui/material';
 import { AuthProvider } from './contexts/AuthContext';
 import RoleBasedLayout from './layouts/RoleBasedLayout';
 import Home from './pages/Home';
@@ -18,13 +18,23 @@ import Profile from './pages/Profile';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
+//Admin
+import AdminDashboard from './pages/AdminDashboard';
+import ManageRestaurants from './pages/admin/ManageRestaurants';
+import ApproveRestaurants from './pages/admin/ApproveRestaurants';
+import AnalyticsDashboard from './pages/admin/AnalyticsDashboard';
+import RestaurantManagerDashboard from './pages/RestaurantManagerDashboard';
+
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
         <Router>
+          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
           <Navbar />
+          <Box component="main" sx={{ flexGrow: 1 }}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
@@ -34,8 +44,20 @@ function App() {
             <Route path="/reservation" element={<Reservation />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/dashboard/*" element={<RoleBasedLayout />} />
+            <Route path="/admin" element={<AdminDashboard />}>  
+              <Route path="restaurants" element={<ManageRestaurants />} />
+              <Route path="pending" element={<ApproveRestaurants />} />
+              <Route path="analytics" element={<AnalyticsDashboard />} />
+            </Route>
+            <Route path="/restaurantManager" element={<RestaurantManagerDashboard />}>  
+              {/* <Route path="restaurants" element={<ManageRestaurants />} />
+              <Route path="pending" element={<ApproveRestaurants />} />
+              <Route path="analytics" element={<AnalyticsDashboard />} /> */}
+            </Route>
           </Routes>
+          </Box>
           <Footer />
+         </Box>
         </Router>
       </AuthProvider>
     </ThemeProvider>

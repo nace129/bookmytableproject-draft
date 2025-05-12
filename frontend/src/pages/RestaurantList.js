@@ -70,7 +70,9 @@ function RestaurantList() {
                 <CardMedia
                   component="img"
                   height="200"
-                  image={`https://source.unsplash.com/random/300x200/?${restaurant.cuisine.split(',')[0].toLowerCase()}`}
+                  image={restaurant.images && restaurant.images.length > 0 
+                    ? restaurant.images[0].url 
+                    : `https://source.unsplash.com/random/300x200/?restaurant`}
                   alt={restaurant.name}
                 />
                 <CardContent sx={{ flexGrow: 1 }}>

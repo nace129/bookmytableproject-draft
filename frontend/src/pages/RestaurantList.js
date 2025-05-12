@@ -12,9 +12,11 @@ import {
   InputAdornment,
   Rating,
   Chip,
+  Stack,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import restaurantData from '../data/restaurants.json';
 
 function RestaurantList() {
@@ -28,6 +30,14 @@ function RestaurantList() {
 
   const getCostRating = (rating) => {
     return '$'.repeat(rating);
+  };
+
+  const getAvailableTables = (tableLayout) => {
+    return tableLayout.reduce((total, table) => total + table.available, 0);
+  };
+
+  const formatCuisine = (cuisine) => {
+    return cuisine.split(',')[0].trim();
   };
 
   return (
@@ -70,32 +80,35 @@ function RestaurantList() {
                 <CardMedia
                   component="img"
                   height="200"
-                  image={`https://source.unsplash.com/random/300x200/?${restaurant.cuisine.split(',')[0].toLowerCase()}`}
+                  image={restaurant.images[0]?.url || `https://source.unsplash.com/random/300x200/?${formatCuisine(restaurant.cuisine).toLowerCase()}`}
                   alt={restaurant.name}
                 />
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Typography gutterBottom variant="h5" component="h2">
                     {restaurant.name}
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
-                    <Rating value={restaurant.rating} precision={0.5} readOnly />
+                  <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                    <Rating value={restaurant.rating} precision={0.5} readOnly size="small" />
                     <Typography variant="body2" color="text.secondary">
                       ({restaurant.rating}) • {restaurant.num_reviews} reviews
                     </Typography>
                     <Chip label={getCostRating(restaurant.cost_rating)} color="primary" size="small" />
-                  </Box>
+                  </Stack>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    {restaurant.cuisine}
+                    {formatCuisine(restaurant.cuisine)}
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <LocationOnIcon sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
                     <Typography variant="body2" color="text.secondary">
                       {restaurant.location.city}, {restaurant.location.state}
                     </Typography>
                   </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    Bookings Today: {restaurant.bookings_today}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      Available Tables: {getAvailableTables(restaurant.table_layout)}
+                    </Typography>
+                  </Box>
                 </CardContent>
               </Card>
             </Grid>

@@ -20,114 +20,117 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  MenuItem,
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, Check as CheckIcon } from '@mui/icons-material';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import restaurantsData from '../data/restaurants.json';
 
 export default function RestaurantManagerDashboard() {
   // Restaurant info state
   const [info, setInfo] = useState({
-    name: '',
-    address: '',
-    contact: '',
-    openingTime: '',
-    closingTime: '',
-    description: '',
-    tableLayout: [],
+    name: 'The Melt',
+    address: 'Sunnyvale, CA, 94086',
+    contact: 'None',
+    openingTime: '09:00',
+    closingTime: '22:00',
+    description: 'A cozy place to dine.',
+    tableLayout: [
+      { time: '17:30', maxSeats: 4 },
+      { time: '18:00', maxSeats: 4 },
+    ],
     photos: []
   });
 
+  // Temporary edit state
+  const [editInfo, setEditInfo] = useState(info);
+
+  // Dummy reservations
+  const dummyReservations = [
+    { id: 'r1', time: '17:30', customerName: 'Alice', partySize: 2, status: 'confirmed' },
+    { id: 'r2', time: '18:00', customerName: 'Bob', partySize: 4, status: 'pending' },
+    { id: 'r3', time: '18:30', customerName: 'Charlie', partySize: 3, status: 'cancelled' },
+    { id: 'r4', time: '19:00', customerName: 'Dana', partySize: 1, status: 'confirmed' },
+  ];
+
   // Reservation state
-  const [reservations, setReservations] = useState([]);
+  const [reservations, setReservations] = useState(dummyReservations);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   // UI state
   const [error, setError] = useState('');
   const [openEdit, setOpenEdit] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editStatus, setEditStatus] = useState('');
 
-  useEffect(() => {
-    // Load the first restaurant from JSON as an example
-    if (restaurantsData.length > 0) {
-      const restaurant = restaurantsData[0];
-      const address = restaurant.location
-        ? `${restaurant.location.city}, ${restaurant.location.state}, ${restaurant.location.zip}`
-        : `Near coordinates (${restaurant.coords?.lat.toFixed(2)}, ${restaurant.coords?.lng.toFixed(2)})`;
-      setInfo({
-        name: restaurant.name,
-        address: address,
-        contact: restaurant.contact || 'No contact info',
-        openingTime: '09:00', // Default opening time
-        closingTime: '22:00', // Default closing time
-        description: restaurant.description || 'No description available',
-        tableLayout: restaurant.table_layout || [],
-        photos: []
-      });
-    }
-  }, []);
-
-  // Load reservations on date change
-  useEffect(() => {
-    async function fetchReservations() {
-      try {
-        // TODO: Replace with real API call
-        const data = []; // await fetch(`/api/reservations?date=${selectedDate.toISOString()}`).then(r=>r.json());
-        setReservations(data);
-      } catch (e) {
-        setError('Failed to fetch reservations');
-      }
-    }
-    fetchReservations();
-  }, [selectedDate]);
-
-  // Handlers for edit dialog
-  const handleEditOpen = () => setOpenEdit(true);
+  // Open edit dialog and initialize temp state
+  const handleEditOpen = () => {
+    setEditInfo(info);
+    setOpenEdit(true);
+  };
   const handleEditClose = () => setOpenEdit(false);
 
-  const handleInfoChange = (field, value) => {
-    setInfo(prev => ({ ...prev, [field]: value }));
+  // EditInfo change handlers
+  const handleEditInfoChange = (field, value) => {
+    setEditInfo(prev => ({ ...prev, [field]: value }));
   };
 
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
-    setInfo(prev => ({ ...prev, photos: [...prev.photos, ...files] }));
+    setEditInfo(prev => ({ ...prev, photos: [...prev.photos, ...files] }));
   };
   const removePhoto = (index) => {
-    setInfo(prev => ({
+    setEditInfo(prev => ({
       ...prev,
       photos: prev.photos.filter((_, i) => i !== index)
     }));
   };
 
   const handleSlotChange = (index, field, value) => {
-    setInfo(prev => {
+    setEditInfo(prev => {
       const copy = [...prev.tableLayout];
       copy[index] = { ...copy[index], [field]: value };
       return { ...prev, tableLayout: copy };
     });
   };
   const addSlot = () => {
-    setInfo(prev => ({
+    setEditInfo(prev => ({
       ...prev,
       tableLayout: [...prev.tableLayout, { time: '', maxSeats: '' }]
     }));
   };
   const removeSlot = (index) => {
-    setInfo(prev => ({
+    setEditInfo(prev => ({
       ...prev,
       tableLayout: prev.tableLayout.filter((_, i) => i !== index)
     }));
   };
 
-  const handleSave = async () => {
-    try {
-      // TODO: PUT /api/restaurant with form data (info + photos)
-      setOpenEdit(false);
-    } catch (e) {
-      setError('Failed to save restaurant information');
-    }
+  // Save edits to main info state
+  const handleSave = () => {
+    setInfo(editInfo);
+    setOpenEdit(false);
+  };
+
+  const startEditing = (reservation) => {
+    setEditingId(reservation.id);
+    setEditStatus(reservation.status);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditStatus('');
+  };
+
+  const saveStatus = (id) => {
+    setReservations(prev => prev.map(r => r.id === id ? { ...r, status: editStatus } : r));
+    setEditingId(null);
+  };
+
+  const handleDeleteRes = (id) => {
+    setReservations(prev => prev.filter(r => r.id !== id));
   };
 
   return (
@@ -180,30 +183,50 @@ export default function RestaurantManagerDashboard() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {reservations.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                  No reservations for selected date
+            {reservations.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell>{r.time}</TableCell>
+                <TableCell>{r.customerName}</TableCell>
+                <TableCell>{r.partySize}</TableCell>
+                <TableCell>
+                  {editingId === r.id ? (
+                    <TextField
+                      select
+                      value={editStatus}
+                      onChange={e => setEditStatus(e.target.value)}
+                      size="small"
+                    >
+                      {['confirmed','pending','cancelled'].map(s => (
+                        <MenuItem key={s} value={s}>{s}</MenuItem>
+                      ))}
+                    </TextField>
+                  ) : (
+                    r.status
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingId === r.id ? (
+                    <>
+                      <IconButton color="primary" onClick={() => saveStatus(r.id)}>
+                        <CheckIcon />
+                      </IconButton>
+                      <IconButton color="secondary" onClick={cancelEditing}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </>
+                  ) : (
+                    <>
+                      <IconButton color="primary" onClick={() => startEditing(r)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton color="error" onClick={() => handleDeleteRes(r.id)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </>
+                  )}
                 </TableCell>
               </TableRow>
-            ) : (
-              reservations.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell>{r.time}</TableCell>
-                  <TableCell>{r.customerName}</TableCell>
-                  <TableCell>{r.partySize}</TableCell>
-                  <TableCell>{r.status}</TableCell>
-                  <TableCell>
-                    <IconButton color="primary">
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton color="error">
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
@@ -212,26 +235,27 @@ export default function RestaurantManagerDashboard() {
       <Dialog open={openEdit} onClose={handleEditClose} maxWidth="sm" fullWidth>
         <DialogTitle>Edit Restaurant Information</DialogTitle>
         <DialogContent>
+          {/* Form Fields bound to editInfo */}
           <TextField
             fullWidth
             margin="normal"
             label="Restaurant Name"
-            value={info.name}
-            onChange={(e) => handleInfoChange('name', e.target.value)}
+            value={editInfo.name}
+            onChange={e => handleEditInfoChange('name', e.target.value)}
           />
           <TextField
             fullWidth
             margin="normal"
             label="Address"
-            value={info.address}
-            onChange={(e) => handleInfoChange('address', e.target.value)}
+            value={editInfo.address}
+            onChange={e => handleEditInfoChange('address', e.target.value)}
           />
           <TextField
             fullWidth
             margin="normal"
             label="Contact Info"
-            value={info.contact}
-            onChange={(e) => handleInfoChange('contact', e.target.value)}
+            value={editInfo.contact}
+            onChange={e => handleEditInfoChange('contact', e.target.value)}
           />
 
           <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -241,8 +265,8 @@ export default function RestaurantManagerDashboard() {
                 margin="normal"
                 label="Opening Time"
                 type="time"
-                value={info.openingTime}
-                onChange={(e) => handleInfoChange('openingTime', e.target.value)}
+                value={editInfo.openingTime}
+                onChange={e => handleEditInfoChange('openingTime', e.target.value)}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -252,8 +276,8 @@ export default function RestaurantManagerDashboard() {
                 margin="normal"
                 label="Closing Time"
                 type="time"
-                value={info.closingTime}
-                onChange={(e) => handleInfoChange('closingTime', e.target.value)}
+                value={editInfo.closingTime}
+                onChange={e => handleEditInfoChange('closingTime', e.target.value)}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -265,10 +289,11 @@ export default function RestaurantManagerDashboard() {
             label="Description"
             multiline
             rows={3}
-            value={info.description}
-            onChange={(e) => handleInfoChange('description', e.target.value)}
+            value={editInfo.description}
+            onChange={e => handleEditInfoChange('description', e.target.value)}
           />
 
+          {/* Photos Upload */}
           <Typography variant="subtitle1" sx={{ mt: 2 }}>Photos</Typography>
           <Button variant="outlined" component="label">
             Upload Photos
@@ -281,7 +306,7 @@ export default function RestaurantManagerDashboard() {
             />
           </Button>
           <Box sx={{ mt: 1 }}>
-            {info.photos.map((file, idx) => (
+            {editInfo.photos.map((file, idx) => (
               <Box key={idx} sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                 <Typography sx={{ flexGrow: 1 }}>{file.name}</Typography>
                 <IconButton size="small" onClick={() => removePhoto(idx)}>
@@ -291,8 +316,9 @@ export default function RestaurantManagerDashboard() {
             ))}
           </Box>
 
+          {/* Table Layout Editor */}
           <Typography variant="subtitle1" sx={{ mt: 2 }}>Table Layout</Typography>
-          {info.tableLayout.map((slot, idx) => (
+          {editInfo.tableLayout.map((slot, idx) => (
             <Grid container spacing={2} alignItems="center" key={idx} sx={{ mt: 1 }}>
               <Grid item xs={5}>
                 <TextField
@@ -300,7 +326,7 @@ export default function RestaurantManagerDashboard() {
                   label="Time"
                   type="time"
                   value={slot.time}
-                  onChange={(e) => handleSlotChange(idx, 'time', e.target.value)}
+                  onChange={e => handleSlotChange(idx, 'time', e.target.value)}
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
@@ -310,7 +336,7 @@ export default function RestaurantManagerDashboard() {
                   label="Max Seats"
                   type="number"
                   value={slot.maxSeats}
-                  onChange={(e) => handleSlotChange(idx, 'maxSeats', e.target.value)}
+                  onChange={e => handleSlotChange(idx, 'maxSeats', e.target.value)}
                 />
               </Grid>
               <Grid item xs={2}>
@@ -320,11 +346,7 @@ export default function RestaurantManagerDashboard() {
               </Grid>
             </Grid>
           ))}
-          <Button
-            startIcon={<AddIcon />}
-            sx={{ mt: 2 }}
-            onClick={addSlot}
-          >
+          <Button startIcon={<AddIcon />} sx={{ mt: 2 }} onClick={addSlot}>
             Add Slot
           </Button>
         </DialogContent>
